@@ -1,0 +1,14 @@
+streamlit                   # framework principal
+requests                    # para llamadas HTTP (webhook, Lottie, etc.)
+firebase-admin              # SDK Admin para Firestore y Storage
+python-dotenv               # carga de variables de entorno (opcional)
+qrcode                      # generación de códigos QR
+pillow                      # manejo de imágenes, requerido por qrcode
+pandas                      # manejo de tabular y creación de DataFrame
+openpyxl                    # motor xlsx para df.to_excel
+xlsxwriter                  # alternativa/soporte extra para exportar Excel
+streamlit-lottie            # para mostrar animaciones Lottie
+streamlit-qrcode-scanner    # módulo integrado de escaneo de QR
+pyzbar
+Pillow
+pyngrok
