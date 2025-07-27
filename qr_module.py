@@ -100,7 +100,7 @@ def generar_codigo_qr_module():
                 "escaneado_dia_1": "NO",
                 "escaneado_dia_2": "NO"
             }
-            save_qr_record(qr_id, record)
+            save_qr_record(record)  # ✅ Corregido: solo se pasa 1 argumento
 
             # Guardamos en session para el envío posterior
             st.session_state["last_payload"] = {
