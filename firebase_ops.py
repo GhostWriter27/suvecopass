@@ -5,19 +5,33 @@ import json
 
 # ==== Inicializar Firebase Admin con credenciales seguras ====
 if not firebase_admin._apps:
-    # Convertir el JSON desde secrets a diccionario
-    sa_json = st.secrets["service_account"]["key_json"]
-    sa_info = json.loads(sa_json)
+    try:
+        # Carga el JSON como string desde secrets
+        sa_json = st.secrets["service_account"]["key_json"]
+        # Lo convierte en dict
+        sa_info = json.loads(sa_json)
 
-    cred = credentials.Certificate(sa_info)
-    firebase_admin.initialize_app(cred, {
-        "storageBucket": st.secrets["firebase"]["storageBucket"]
-    })
+        # Opcional: debug visible en logs de Streamlit Cloud
+        print("🔐 Firebase keys:", list(sa_info.keys()))
+        print("🔐 private_key empieza con:", sa_info["private_key"][:30])
 
-# Instancias globales de Firestore y Storage
+        # Inicializa Firebase con el dict
+        cred = credentials.Certificate(sa_info)
+        firebase_admin.initialize_app(cred, {
+            "storageBucket": st.secrets["firebase"]["storageBucket"]
+        })
+
+        print("✅ Firebase inicializado correctamente.")
+
+    except Exception as e:
+        st.error(f"🔥 Error al inicializar Firebase: {e}")
+        raise
+
+# ==== Instancias globales ====
 db = firestore.client()
 bucket = storage.bucket()
 
+# ==== Funciones utilitarias ====
 def check_email_exists(email: str) -> bool:
     doc = db.collection("users").document(email).get()
     return doc.exists
