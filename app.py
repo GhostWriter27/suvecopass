@@ -4,13 +4,12 @@ import time
 import base64
 import requests
 import json
-import firebase_admin
-from firebase_admin import credentials, firestore, storage
 from config import firebase_config
 from streamlit_lottie import st_lottie
 
-from qr_module import generar_codigo_qr_module      # módulo de Generar QR
-from scan_module import escaneo_qr_module           # módulo de Escanear QR
+from qr_module import generar_codigo_qr_module
+from scan_module import escaneo_qr_module
+from firebase_ops import db, bucket
 
 # ==== Configuración general ====
 st.set_page_config(page_title="SuvecoPass", layout="wide")
@@ -19,8 +18,7 @@ st.set_page_config(page_title="SuvecoPass", layout="wide")
 st.markdown(
     """
     <style>
-      /* fuerza el icono de menú (≡) visible siempre */
-      button[title=\"Open sidebar\"] {
+      button[title="Open sidebar"] {
         visibility: visible !important;
       }
     </style>
@@ -35,7 +33,6 @@ css_styles = '''
   #MainMenu { visibility: hidden; }
   .block-container { padding: 2rem; background: #f0f2f6; }
 
-  /* ID Card */
   .id-card { width:100%; max-width:700px; height:220px; border:2px solid #ccc;
     border-radius:12px; background:#f9f9f9; box-shadow:0 4px 10px rgba(0,0,0,0.1);
     display:flex; overflow:hidden; margin-bottom:40px; }
@@ -49,7 +46,6 @@ css_styles = '''
   .id-label { font-weight:bold; color:#444; width:100px; display:inline-block; }
   .id-value { color:#222; }
 
-  /* Bloque de seguridad */
   .info-card { width:100%; max-width:350px; height:220px; border:2px solid #ccc;
     border-radius:12px; background:#f9f9f9; box-shadow:0 4px 10px rgba(0,0,0,0.1);
     display:flex; align-items:center; justify-content:center; margin-bottom:40px; }
@@ -59,20 +55,6 @@ css_styles = '''
 </style>
 '''
 st.markdown(css_styles, unsafe_allow_html=True)
-
-# ==== Inicializar Firebase Admin con credenciales seguras ====
-if not firebase_admin._apps:
-    # Cargar JSON de cuenta de servicio desde Streamlit Secrets
-    sa_json = st.secrets["service_account"]["key_json"]
-    sa_info = json.loads(sa_json)
-    cred = credentials.Certificate(sa_info)
-    firebase_admin.initialize_app(cred, {
-        "storageBucket": firebase_config["storageBucket"]
-    })
-
-# Instanciar cliente de Firestore y bucket de Storage
-db = firestore.client()
-bucket = storage.bucket()
 
 # ==== Splash (solo la primera vez) ====
 def get_base64_file(path):
@@ -86,9 +68,10 @@ if "splash_shown" not in st.session_state:
         f"""
         <div style="display:flex; justify-content:center; align-items:center;
             height:100vh; background-color:#e0e0e0; margin:-1rem;">
-          <img src=\"data:image/gif;base64,{gif_b64}\" style=\"max-width:80%; height:auto;\" />
+          <img src="data:image/gif;base64,{gif_b64}" style="max-width:80%; height:auto;" />
         </div>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True
     )
     time.sleep(4)
     splash.empty()
@@ -151,10 +134,15 @@ avatar_url = profile.get("avatar_url", "")
 def load_lottie_url(url):
     r = requests.get(url)
     return r.json() if r.ok else None
-lottie_confetti = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_touohxv0.json")
+
+lottie_confetti = load_lottie_url(
+    "https://assets9.lottiefiles.com/packages/lf20_touohxv0.json"
+)
 
 # ==== Pestañas principales ====
-tab1, tab2, tab3, tab4 = st.tabs(["🏠 Inicio", "📤 Generar QR", "📥 Escanear QR", "🔍 Búsqueda manual"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🏠 Inicio", "📤 Generar QR", "📥 Escanear QR", "🔍 Búsqueda manual"
+])
 
 # ==== Tab 1: Bienvenida con ID Card y bloque exclusivo ====
 with tab1:
@@ -165,24 +153,37 @@ with tab1:
         img_url = avatar_url or "https://via.placeholder.com/140x180?text=Foto"
         user_id = st.session_state["user_email"].split("@")[0].upper()
         card_html = f"""
-        <div class=\"id-card\">...
+        <div class="id-card">
+          <div class="id-photo">
+            <img src="{img_url}" alt="Foto usuario" />
+          </div>
+          <div class="id-info">
+            <div class="id-header">SUVECOEX 2025</div>
+            <div class="id-line"><span class="id-label">Nombre:</span> <span class="id-value">{name}</span></div>
+            <div class="id-line"><span class="id-label">Correo:</span> <span class="id-value">{st.session_state["user_email"]}</span></div>
+            <div class="id-line"><span class="id-label">Rol:</span> <span class="id-value">Staff autorizado</span></div>
+            <div class="id-line"><span class="id-label">ID:</span> <span class="id-value">{user_id}</span></div>
+          </div>
+        </div>
         """
         st.markdown(card_html, unsafe_allow_html=True)
     with col2:
         info_html = """
-        <div class=\"info-card\">...
+        <div class="info-card">
+          <div class="info-text">App de uso exclusivo para personal autorizado</div>
+        </div>
         """
         st.markdown(info_html, unsafe_allow_html=True)
 
-# ==== Tab 2: Generar QR ====
+# ==== Tab 2: Generar QR ====
 with tab2:
     generar_codigo_qr_module()
 
-# ==== Tab 3: Escanear QR ====
+# ==== Tab 3: Escanear QR ====
 with tab3:
     escaneo_qr_module()
 
-# ==== Tab 4: Búsqueda manual ====
+# ==== Tab 4: Búsqueda manual ====
 with tab4:
     st.subheader("🔍 Búsqueda manual")
     criterio = st.selectbox("Buscar por", ["Correo", "Nombre", "Cédula"])
@@ -192,6 +193,6 @@ with tab4:
 
 # ==== Footer ====
 st.markdown(
-    '<div class=\"footer\">Hecho con ❤️ por el SUVECOEX Team</div>',
+    '<div class="footer">Hecho con ❤️ por el SUVECOEX Team</div>',
     unsafe_allow_html=True
 )
