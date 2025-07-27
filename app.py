@@ -3,6 +3,7 @@ import streamlit as st
 import time
 import base64
 import requests
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 from config import firebase_config
@@ -59,14 +60,17 @@ css_styles = '''
 '''
 st.markdown(css_styles, unsafe_allow_html=True)
 
-# ==== Inicializar Firebase Admin una sola vez ====
+# ==== Inicializar Firebase Admin con credenciales seguras ====
 if not firebase_admin._apps:
-    key_path = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
-    cred = credentials.Certificate(key_path)
+    # Cargar JSON de cuenta de servicio desde Streamlit Secrets
+    sa_json = st.secrets["service_account"]["key_json"]
+    sa_info = json.loads(sa_json)
+    cred = credentials.Certificate(sa_info)
     firebase_admin.initialize_app(cred, {
         "storageBucket": firebase_config["storageBucket"]
     })
 
+# Instanciar cliente de Firestore y bucket de Storage
 db = firestore.client()
 bucket = storage.bucket()
 
@@ -152,7 +156,7 @@ lottie_confetti = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20
 # ==== Pestañas principales ====
 tab1, tab2, tab3, tab4 = st.tabs(["🏠 Inicio", "📤 Generar QR", "📥 Escanear QR", "🔍 Búsqueda manual"])
 
-# ==== Tab 1: Bienvenida con ID Card y bloque exclusivo ====
+# ==== Tab 1: Bienvenida con ID Card y bloque exclusivo ====
 with tab1:
     if lottie_confetti:
         st_lottie(lottie_confetti, height=80, key="confetti")
@@ -161,25 +165,12 @@ with tab1:
         img_url = avatar_url or "https://via.placeholder.com/140x180?text=Foto"
         user_id = st.session_state["user_email"].split("@")[0].upper()
         card_html = f"""
-        <div class="id-card">
-          <div class="id-photo">
-            <img src="{img_url}" alt="Foto usuario" />
-          </div>
-          <div class="id-info">
-            <div class="id-header">SUVECOEX 2025</div>
-            <div class="id-line"><span class="id-label">Nombre:</span> <span class="id-value">{name}</span></div>
-            <div class="id-line"><span class="id-label">Correo:</span> <span class="id-value">{st.session_state["user_email"]}</span></div>
-            <div class="id-line"><span class="id-label">Rol:</span> <span class="id-value">Staff autorizado</span></div>
-            <div class="id-line"><span class="id-label">ID:</span> <span class="id-value">{user_id}</span></div>
-          </div>
-        </div>
+        <div class=\"id-card\">...
         """
         st.markdown(card_html, unsafe_allow_html=True)
     with col2:
         info_html = """
-        <div class="info-card">
-          <div class="info-text">App de uso exclusivo para personal autorizado</div>
-        </div>
+        <div class=\"info-card\">...
         """
         st.markdown(info_html, unsafe_allow_html=True)
 
@@ -201,6 +192,6 @@ with tab4:
 
 # ==== Footer ====
 st.markdown(
-    '<div class="footer">Hecho con ❤️ por el SUVECOEX Team</div>',
+    '<div class=\"footer\">Hecho con ❤️ por el SUVECOEX Team</div>',
     unsafe_allow_html=True
 )
