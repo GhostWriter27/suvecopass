@@ -1,5 +1,3 @@
-# scan_module.py
-
 import streamlit as st
 from firebase_ops import db
 import re
@@ -24,14 +22,15 @@ def escaneo_qr_module():
             st.session_state["scan_done"] = False
             for k in ("last_qr_id", "count_dia_1", "count_dia_2"):
                 st.session_state.pop(k, None)
+        st.info("Presiona el botón para escanear otro QR.")
         return
 
     st.markdown("📲 **Apunta la cámara al código QR** y espera unos segundos.")
 
     qr_data = None
     try:
-        with st.container():
-            qr_data = qrcode_scanner(key="qr_live")
+        # Asegura espacio suficiente para el escáner (mínimo 100px)
+        qr_data = qrcode_scanner(key="qr_live", qrbox=200)
     except Exception as e:
         st.error("❌ No se pudo acceder a la cámara.")
         st.info("Activa los permisos de cámara o cambia de navegador/dispositivo.")

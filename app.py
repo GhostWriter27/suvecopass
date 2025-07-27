@@ -13,7 +13,7 @@ from firebase_ops import db, bucket
 # ==== Configuración general ====
 st.set_page_config(page_title="SuvecoPass", layout="centered")
 
-# ==== Estilos globales optimizados ====
+# ==== Estilos globales optimizados y responsivos ====
 st.markdown("""
 <style>
   body {
@@ -27,6 +27,7 @@ st.markdown("""
 
   .block-container {
     padding: 1rem;
+    max-width: 100vw;
   }
 
   label, .stTextInput > label, .stSelectbox > label, .stTextArea > label {
@@ -115,6 +116,41 @@ st.markdown("""
 
   button[title="Open sidebar"] {
     visibility: visible !important;
+  }
+
+  /* --- Mejoras responsivas para móviles --- */
+  @media (max-width: 600px) {
+    .block-container {
+      padding: 0.5rem;
+      max-width: 100vw;
+    }
+    .id-card, .info-card {
+      max-width: 98vw;
+      margin: 10px auto;
+      padding: 0.5rem;
+      font-size: 0.95rem;
+    }
+    .id-photo img {
+      width: 90px;
+      height: 110px;
+    }
+    .id-header {
+      font-size: 1.1rem;
+    }
+    .id-line {
+      font-size: 0.95rem;
+    }
+    .info-text {
+      font-size: 1rem;
+    }
+    .footer {
+      font-size: 0.75rem;
+      margin-top: 15px;
+    }
+    .stTabs [role="tab"] {
+      font-size: 0.95rem !important;
+      padding: 0.5rem 0.5rem !important;
+    }
   }
 </style>
 """, unsafe_allow_html=True)
@@ -239,4 +275,4 @@ with tab4:
     st.info("🔧 Módulo de búsqueda manual en desarrollo.")
 
 # ==== Footer ====
-st.markdown('<div class="footer">Hecho con ❤️ por el SUVECOEX Team</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer">Hecho con ❤️ por el SUVECOEX 2025</div>', unsafe_allow_html=True)
