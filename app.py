@@ -12,51 +12,96 @@ from scan_module import escaneo_qr_module
 from firebase_ops import db, bucket
 
 # ==== Configuración general ====
-st.set_page_config(page_title="SuvecoPass", layout="wide")
+st.set_page_config(page_title="SuvecoPass", layout="centered")
 
 # ==== Forzar siempre visible el icono de sidebar ====
-st.markdown(
-    """
+st.markdown("""
     <style>
       button[title="Open sidebar"] {
         visibility: visible !important;
       }
     </style>
-    """,
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
-# ==== Estilos globales ====
+# ==== Estilos globales responsivos ====
 css_styles = '''
 <style>
   body { font-family: 'Inter', sans-serif; }
   #MainMenu { visibility: hidden; }
-  .block-container { padding: 2rem; background: #f0f2f6; }
+  .block-container { padding: 1rem; background: #f0f2f6; }
 
-  .id-card { width:100%; max-width:700px; height:220px; border:2px solid #ccc;
-    border-radius:12px; background:#f9f9f9; box-shadow:0 4px 10px rgba(0,0,0,0.1);
-    display:flex; overflow:hidden; margin-bottom:40px; }
-  .id-photo { flex:0 0 180px; background:#e0e0e0;
-    display:flex; align-items:center; justify-content:center; }
-  .id-photo img { width:140px; height:180px; object-fit:cover; border:2px solid #ccc; }
-  .id-info { flex:1; padding:16px 24px; display:flex;
-    flex-direction:column; justify-content:space-around; }
-  .id-header { font-size:1.4rem; font-weight:bold; color:#000; margin-bottom:8px; }
-  .id-line { font-size:0.95rem; margin-bottom:4px; }
-  .id-label { font-weight:bold; color:#444; width:100px; display:inline-block; }
-  .id-value { color:#222; }
+  .id-card, .info-card {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    background: #f9f9f9;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+  }
 
-  .info-card { width:100%; max-width:350px; height:220px; border:2px solid #ccc;
-    border-radius:12px; background:#f9f9f9; box-shadow:0 4px 10px rgba(0,0,0,0.1);
-    display:flex; align-items:center; justify-content:center; margin-bottom:40px; }
-  .info-text { font-size:1.3rem; font-weight:bold; color:#000; text-align:center; }
+  .id-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
 
-  .footer { text-align:center; color:#888; font-size:0.85rem; margin-top:40px; }
+  .id-photo img {
+    width: 140px;
+    height: 180px;
+    object-fit: cover;
+    border: 2px solid #ccc;
+  }
+
+  .id-info {
+    padding: 1rem;
+  }
+
+  .id-header {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .id-line {
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+
+  .id-label {
+    font-weight: bold;
+    color: #444;
+  }
+
+  .id-value {
+    color: #222;
+  }
+
+  .info-text {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #000;
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .footer {
+    text-align: center;
+    color: #888;
+    font-size: 0.85rem;
+    margin-top: 30px;
+  }
 </style>
 '''
 st.markdown(css_styles, unsafe_allow_html=True)
 
-# ==== Splash (solo la primera vez) ====
+# ==== Splash ====
 def get_base64_file(path):
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -77,13 +122,13 @@ if "splash_shown" not in st.session_state:
     splash.empty()
     st.session_state.splash_shown = True
 
-# ==== Manejo de sesión (logout) ====
+# ==== Logout ====
 if st.sidebar.button("🚪 Cerrar sesión") and "user_email" in st.session_state:
     st.session_state.pop("user_email", None)
     st.session_state.pop("id_token", None)
     st.rerun()
 
-# ==== Login con Firebase REST ====
+# ==== Login ====
 if "user_email" not in st.session_state:
     st.sidebar.header("🔐 Iniciar sesión")
     email = st.sidebar.text_input("Email")
@@ -104,7 +149,7 @@ if "user_email" not in st.session_state:
             st.sidebar.error(f"📛 {err}")
     st.stop()
 
-# ==== Perfil de usuario (primer login) ====
+# ==== Crear perfil ====
 user_doc_ref = db.collection("users").document(st.session_state["user_email"])
 user_doc = user_doc_ref.get()
 if not user_doc.exists:
@@ -125,12 +170,12 @@ if not user_doc.exists:
         st.rerun()
     st.stop()
 
-# ==== Cargar perfil ====
+# ==== Perfil cargado ====
 profile = user_doc.to_dict()
 name = f"{profile.get('first_name','')} {profile.get('last_name','')}".strip()
 avatar_url = profile.get("avatar_url", "")
 
-# ==== Cargar animación Lottie de confetti ====
+# ==== Cargar animación Lottie ====
 def load_lottie_url(url):
     r = requests.get(url)
     return r.json() if r.ok else None
@@ -139,41 +184,32 @@ lottie_confetti = load_lottie_url(
     "https://assets9.lottiefiles.com/packages/lf20_touohxv0.json"
 )
 
-# ==== Pestañas principales ====
+# ==== Tabs ====
 tab1, tab2, tab3, tab4 = st.tabs([
     "🏠 Inicio", "📤 Generar QR", "📥 Escanear QR", "🔍 Búsqueda manual"
 ])
 
-# ==== Tab 1: Bienvenida con ID Card y bloque exclusivo ====
+# ==== Tab 1 ====
 with tab1:
     if lottie_confetti:
         st_lottie(lottie_confetti, height=80, key="confetti")
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        img_url = avatar_url or "https://via.placeholder.com/140x180?text=Foto"
-        user_id = st.session_state["user_email"].split("@")[0].upper()
-        card_html = f"""
-        <div class="id-card">
-          <div class="id-photo">
-            <img src="{img_url}" alt="Foto usuario" />
-          </div>
-          <div class="id-info">
-            <div class="id-header">SUVECOEX 2025</div>
-            <div class="id-line"><span class="id-label">Nombre:</span> <span class="id-value">{name}</span></div>
-            <div class="id-line"><span class="id-label">Correo:</span> <span class="id-value">{st.session_state["user_email"]}</span></div>
-            <div class="id-line"><span class="id-label">Rol:</span> <span class="id-value">Staff autorizado</span></div>
-            <div class="id-line"><span class="id-label">ID:</span> <span class="id-value">{user_id}</span></div>
-          </div>
-        </div>
-        """
-        st.markdown(card_html, unsafe_allow_html=True)
-    with col2:
-        info_html = """
-        <div class="info-card">
-          <div class="info-text">App de uso exclusivo para personal autorizado</div>
-        </div>
-        """
-        st.markdown(info_html, unsafe_allow_html=True)
+    st.image(avatar_url or "https://via.placeholder.com/140x180?text=Foto", width=140)
+    st.markdown(f"""
+    <div class="id-card">
+      <div class="id-info">
+        <div class="id-header">SUVECOEX 2025</div>
+        <div class="id-line"><span class="id-label">Nombre:</span> {name}</div>
+        <div class="id-line"><span class="id-label">Correo:</span> {st.session_state["user_email"]}</div>
+        <div class="id-line"><span class="id-label">Rol:</span> Staff autorizado</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-card">
+      <div class="info-text">App de uso exclusivo para personal autorizado</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==== Tab 2: Generar QR ====
 with tab2:
@@ -192,7 +228,4 @@ with tab4:
         st.info(f"Buscando {valor} por {criterio}")
 
 # ==== Footer ====
-st.markdown(
-    '<div class="footer">Hecho con ❤️ por el SUVECOEX Team</div>',
-    unsafe_allow_html=True
-)
+st.markdown('<div class="footer">Hecho con ❤️ por el SUVECOEX Team</div>', unsafe_allow_html=True)
