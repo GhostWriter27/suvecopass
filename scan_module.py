@@ -3,15 +3,16 @@
 import streamlit as st
 from firebase_ops import db
 import re
+import cv2
+import numpy as np
 from PIL import Image
-from pyzbar.pyzbar import decode
 
 def escaneo_qr_module():
     """
-    Módulo Streamlit para Escanear QR SIN html5-qrcode:
-      1) Selección de día (Día 1 / Día 2)
+    Módulo Streamlit para Escanear QR usando OpenCV:
+      1) Selección de día (Día 1 / Día 2)
       2) st.camera_input() abre la cámara o uploader
-      3) Decodifica el ID del QR con pyzbar
+      3) Decodifica el ID del QR con OpenCV
       4) Verifica y marca ingreso en Firestore
       5) Muestra datos y mensaje de bienvenida
       6) Lleva recuento de escaneos para el día
@@ -22,7 +23,7 @@ def escaneo_qr_module():
     # 1) Día a registrar
     dia = st.selectbox(
         "¿Para qué día registras ingreso?",
-        ["Día 1", "Día 2"],
+        ["Día 1", "Día 2"],
         key="scan_day"
     )
 
@@ -46,14 +47,16 @@ def escaneo_qr_module():
     if not img_file:
         return
 
-    # 4) Decodificar QR con pyzbar
+    # 4) Decodificar QR con OpenCV
     image = Image.open(img_file)
-    decoded = decode(image)
-    if not decoded:
+    img_array = np.array(image.convert('RGB'))
+
+    detector = cv2.QRCodeDetector()
+    data, vertices_array, _ = detector.detectAndDecode(img_array)
+
+    if not data:
         st.error("❌ No se detectó un QR válido en la imagen.")
         return
-
-    data = decoded[0].data.decode("utf-8")
 
     # 5) Extraer el ID SUVECO2025-XXXXXX
     m = re.search(r"SUVECO2025-[A-Z2-9]+", data)
@@ -69,7 +72,7 @@ def escaneo_qr_module():
         return
 
     record = doc.to_dict()
-    field = "escaneado_dia_1" if dia == "Día 1" else "escaneado_dia_2"
+    field = "escaneado_dia_1" if dia == "Día 1" else "escaneado_dia_2"
     if record.get(field) == "SI":
         st.warning(f"⚠️ Ya registraste este código para {dia}.")
         return
@@ -85,11 +88,11 @@ def escaneo_qr_module():
     st.success(f"✅ ¡{name}!")
     st.write(f"**Empresa:** {empresa}   |   **Teléfono:** {phone}")
     st.markdown(
-        f"**¡{name}, bienvenido a SUVECOEX 2025, disfruta del summit donde el comercio exterior conecta, crece y se transforma!**"
+        f"**¡{name}, bienvenido a SUVECOEX 2025, disfruta del summit donde el comercio exterior conecta, crece y se transforma!**"
     )
 
     # 8) Contador de escaneos en esta sesión
-    counter_key = "count_dia_1" if dia == "Día 1" else "count_dia_2"
+    counter_key = "count_dia_1" if dia == "Día 1" else "count_dia_2"
     st.session_state[counter_key] = st.session_state.get(counter_key, 0) + 1
     st.info(f"👤 Has escaneado {st.session_state[counter_key]} vez(ces) en {dia} hoy.")
 
