@@ -28,10 +28,17 @@ def escaneo_qr_module():
 
     st.markdown("📲 **Apunta la cámara al código QR** y espera unos segundos.")
 
-    with st.container():
-        qr_data = qrcode_scanner(key="qr_live")
+    qr_data = None
+    try:
+        with st.container():
+            qr_data = qrcode_scanner(key="qr_live")
+    except Exception as e:
+        st.error("❌ No se pudo acceder a la cámara.")
+        st.info("Activa los permisos de cámara o cambia de navegador/dispositivo.")
+        st.stop()
 
     if not qr_data:
+        st.info("📷 Esperando escaneo...")
         return
 
     # Validar formato de ID
@@ -62,10 +69,10 @@ def escaneo_qr_module():
     empresa = record.get("empresa", "")
     phone = record.get("phone", "")
 
-    st.success(f"✅ ¡{name}!")
+    st.success(f"✅ ¡{name} ha sido registrado exitosamente!")
     st.write(f"**Empresa:** {empresa}   |   **Teléfono:** {phone}")
     st.markdown(
-        f"**¡{name}, bienvenido a SUVECOEX 2025, disfruta del summit donde el comercio exterior conecta, crece y se transforma!**"
+        f"**¡{name}, bienvenido a SUVECOEX 2025, donde el comercio exterior conecta, crece y se transforma!**"
     )
 
     # Contador de escaneos

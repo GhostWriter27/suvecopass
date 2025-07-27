@@ -11,23 +11,49 @@ from scan_module import escaneo_qr_module
 from firebase_ops import db, bucket
 
 # ==== Configuración general ====
-st.set_page_config(page_title="SuvecoPass", layout="wide")
+st.set_page_config(page_title="SuvecoPass", layout="centered")
 
-# ==== Forzar siempre visible el icono de sidebar ====
+# ==== Estilos globales optimizados ====
 st.markdown("""
-    <style>
-      button[title="Open sidebar"] {
-        visibility: visible !important;
-      }
-    </style>
-""", unsafe_allow_html=True)
-
-# ==== Estilos globales responsivos ====
-css_styles = '''
 <style>
-  body { font-family: 'Inter', sans-serif; }
-  #MainMenu { visibility: hidden; }
-  .block-container { padding: 1rem; background: #f0f2f6; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+  }
+
+  #MainMenu, header, footer {
+    visibility: hidden;
+  }
+
+  .block-container {
+    padding: 1rem;
+  }
+
+  label, .stTextInput > label, .stSelectbox > label, .stTextArea > label {
+    color: #000 !important;
+    font-weight: bold;
+  }
+
+  input, select, textarea {
+    color: #000 !important;
+  }
+
+  h1, h2, h3, h4, h5 {
+    color: #000 !important;
+  }
+
+  video {
+    width: 100vw !important;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: auto;
+    z-index: 1;
+  }
+
+  canvas {
+    display: none !important;
+  }
 
   .id-card, .info-card {
     width: 100%;
@@ -86,9 +112,12 @@ css_styles = '''
     font-size: 0.85rem;
     margin-top: 30px;
   }
+
+  button[title="Open sidebar"] {
+    visibility: visible !important;
+  }
 </style>
-'''
-st.markdown(css_styles, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # ==== Splash ====
 def get_base64_file(path):
@@ -203,23 +232,6 @@ with tab2:
 
 # ==== Tab 3: Escanear QR ====
 with tab3:
-    # 🎯 CSS para mostrar correctamente la cámara en móviles
-    st.markdown("""
-    <style>
-    video {
-      width: 100% !important;
-      max-width: 420px;
-      height: auto !important;
-      margin: auto;
-      display: block;
-      z-index: 10;
-    }
-    canvas {
-      display: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
     escaneo_qr_module()
 
 # ==== Tab 4: Búsqueda manual ====

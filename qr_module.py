@@ -1,5 +1,3 @@
-# qr_module.py
-
 import streamlit as st
 import qrcode
 import io
@@ -35,31 +33,36 @@ def enviar_por_email_silencioso(payload: dict) -> bool:
 def generar_codigo_qr_module():
     st.header("📤 Generación de Código QR")
 
-    # 1) Formulario
-    with st.form("qr_form"):
-        name               = st.text_input("Nombre completo", key="qr_name")
-        email              = st.text_input("Correo electrónico", key="qr_email")
-        phone              = st.text_input("Teléfono", key="qr_phone")
-        empresa            = st.text_input("Empresa", key="qr_empresa")
-        cargo              = st.text_input("Cargo", key="qr_cargo")
-        nicho              = st.text_input("Nicho", key="qr_nicho")
-        tipo_participacion = st.selectbox(
-            "Tipo de participación",
-            [
-                "Entrada General", "Entrada Online", "Entrada Premium",
-                "Entrada Cortesía Premium", "Entrada Patrocinio Premium",
-                "Patrocinio Conexión", "Patrocinio Conocimiento", "Patrocinio Cumbre",
-                "Patrocinio RespaldarES", "Patrocinio Lanyards", "Patrocinio Bolsas",
-                "Patrocinio Libretas", "Patrocinio Marco Digital"
-            ],
-            key="qr_tipo"
-        )
-        submitted = st.form_submit_button("Generar QR")
+    with st.container():
+        st.subheader("📝 Datos del Participante")
+
+        with st.form("qr_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                name  = st.text_input("Nombre completo", key="qr_name")
+                email = st.text_input("Correo electrónico", key="qr_email")
+                phone = st.text_input("Teléfono", key="qr_phone")
+                cargo = st.text_input("Cargo", key="qr_cargo")
+            with col2:
+                empresa = st.text_input("Empresa", key="qr_empresa")
+                nicho   = st.text_input("Nicho", key="qr_nicho")
+                tipo_participacion = st.selectbox(
+                    "Tipo de participación",
+                    [
+                        "Entrada General", "Entrada Online", "Entrada Premium",
+                        "Entrada Cortesía Premium", "Entrada Patrocinio Premium",
+                        "Patrocinio Conexión", "Patrocinio Conocimiento", "Patrocinio Cumbre",
+                        "Patrocinio RespaldarES", "Patrocinio Lanyards", "Patrocinio Bolsas",
+                        "Patrocinio Libretas", "Patrocinio Marco Digital"
+                    ],
+                    key="qr_tipo"
+                )
+
+            submitted = st.form_submit_button("✅ Generar QR")
 
     qr_id  = None
     qr_url = None
 
-    # 2) Al enviar el formulario
     if submitted:
         if not (name and email and phone):
             st.error("❗ Debes completar nombre, email y teléfono.")
@@ -80,7 +83,7 @@ def generar_codigo_qr_module():
             buffer.seek(0)
             blob = bucket.blob(f"qrs/{qr_id}.png")
             blob.upload_from_string(buffer.read(), content_type="image/png")
-            blob.make_public()  # ← Esto asegura que el objeto sea público
+            blob.make_public()
             qr_url = blob.public_url
 
             # Guardar en Firestore
@@ -112,9 +115,9 @@ def generar_codigo_qr_module():
             }
 
             st.success("✅ QR generado correctamente.")
-            st.image(qr_url, caption=f"QR: {qr_id}", use_column_width=False)
+            st.image(qr_url, caption=f"QR: {qr_id}", use_column_width=True)
 
-    # 3) Botón "Enviar por email"
+    # Botón "Enviar por email"
     if "last_payload" in st.session_state:
         if st.button("✉️ Enviar por email"):
             ok = enviar_por_email_silencioso(st.session_state["last_payload"])
@@ -123,24 +126,26 @@ def generar_codigo_qr_module():
             else:
                 st.error("❌ Falló el envío. Intenta de nuevo.")
 
-    # 4) Descargar registros históricos
-    if st.button("📥 Descargar registros"):
-        docs = get_all_qr_records()
-        df   = pd.DataFrame(docs)
-        # Reordenar columnas
-        columnas = [
-            "id_qr", "name", "email", "phone", "empresa", "cargo",
-            "nicho", "tipo_participacion", "codigo_entrada",
-            "escaneado_dia_1", "escaneado_dia_2"
-        ]
-        df = df[[c for c in columnas if c in df.columns]]
+    # Botón para exportar histórico
+    with st.container():
+        st.markdown("---")
+        if st.button("📥 Descargar registros históricos"):
+            docs = get_all_qr_records()
+            df   = pd.DataFrame(docs)
 
-        buf = io.BytesIO()
-        df.to_excel(buf, index=False)
-        buf.seek(0)
-        st.download_button(
-            "📥 Descargar Excel con todos los registros",
-            buf.getvalue(),
-            "registros_qrs.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            columnas = [
+                "id_qr", "name", "email", "phone", "empresa", "cargo",
+                "nicho", "tipo_participacion", "codigo_entrada",
+                "escaneado_dia_1", "escaneado_dia_2"
+            ]
+            df = df[[c for c in columnas if c in df.columns]]
+
+            buf = io.BytesIO()
+            df.to_excel(buf, index=False)
+            buf.seek(0)
+            st.download_button(
+                "📥 Descargar Excel con todos los registros",
+                buf.getvalue(),
+                "registros_qrs.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
