@@ -1,12 +1,20 @@
+# scan_module.py
+
+import re
 import streamlit as st
 from firebase_ops import db
-import re
 from streamlit_qrcode_scanner import qrcode_scanner
-import streamlit.components.v1 as components
 
 def escaneo_qr_module():
     """
-    Escaneo QR responsivo usando streamlit-qrcode-scanner con Firestore.
+    Módulo Streamlit para Escanear QR EN VIVO con streamlit-qrcode-scanner:
+      1) Selección de día (Día 1 / Día 2)
+      2) qrcode_scanner() abre la cámara y detecta el QR en vivo
+      3) Decodifica el texto del QR
+      4) Verifica y marca ingreso en Firestore
+      5) Muestra datos y mensaje de bienvenida
+      6) Lleva recuento de escaneos para el día
+      7) Botón “Escanear otro QR” para resetear
     """
     st.header("📥 Escaneo de Códigos QR")
 
@@ -17,50 +25,31 @@ def escaneo_qr_module():
         key="scan_day"
     )
 
-    # Si ya escaneaste, botón de reinicio
+    st.markdown("🔍 **Apunta tu cámara al QR para escanear en vivo:**")
+
+    # 2) Cámara en vivo + detección automática
+    data = qrcode_scanner(key="qr_scanner")
+
+    # 9) Reinicio si ya escaneaste
     if st.session_state.get("scan_done", False):
         if st.button("🔄 Escanear otro QR"):
-            st.session_state["scan_done"] = False
-            for k in ("last_qr_id", "count_dia_1", "count_dia_2"):
+            for k in ("scan_done", "last_qr_id", "count_dia_1", "count_dia_2"):
                 st.session_state.pop(k, None)
         st.info("Presiona el botón para escanear otro QR.")
         return
 
-    st.markdown("📲 **Apunta la cámara al código QR** y espera unos segundos.")
-
-    # 🔐 Forzar permiso de cámara
-    components.html("""
-    <script>
-    navigator.mediaDevices.getUserMedia({ video: true }).then(() => {
-      console.log("✅ Permiso de cámara concedido");
-    }).catch(err => {
-      alert("❌ No se pudo acceder a la cámara. Activa permisos en tu navegador.");
-      console.error("Error:", err);
-    });
-    </script>
-    """, height=0)
-
-    qr_data = None
-    try:
-        # Asegura espacio suficiente para el escáner (mínimo 100px)
-        qr_data = qrcode_scanner(key="qr_live", qrbox=200)
-    except Exception as e:
-        st.error("❌ No se pudo acceder a la cámara.")
-        st.info("Activa los permisos de cámara o cambia de navegador/dispositivo.")
-        st.stop()
-
-    if not qr_data:
-        st.info("📷 Esperando escaneo...")
+    # 3) No seguimos hasta tener datos
+    if not data:
         return
 
-    # Validar formato de ID
-    m = re.search(r"SUVECO2025-[A-Z2-9]+", qr_data)
+    # 4) El componente ya nos da el texto, lo analizamos
+    m = re.search(r"SUVECO2025-[A-Z2-9]+", data)
     if not m:
         st.error("❌ El contenido no coincide con el formato esperado.")
         return
     qr_id = m.group(0)
 
-    # Buscar en Firestore
+    # 5) Validar en Firestore
     doc = db.collection("qrs").document(qr_id).get()
     if not doc.exists:
         st.error("🚫 Código no encontrado.")
@@ -73,13 +62,13 @@ def escaneo_qr_module():
         st.warning(f"⚠️ Ya registraste este código para {dia}.")
         return
 
-    # Marcar como escaneado
+    # 6) Marcar ingreso
     db.collection("qrs").document(qr_id).update({field: "SI"})
 
-    # Mostrar bienvenida
-    name = record.get("name", "")
+    # 7) Mostrar bienvenida
+    name    = record.get("name", "Usuario")
     empresa = record.get("empresa", "")
-    phone = record.get("phone", "")
+    phone   = record.get("phone", "")
 
     st.success(f"✅ ¡{name} ha sido registrado exitosamente!")
     st.write(f"**Empresa:** {empresa}   |   **Teléfono:** {phone}")
@@ -87,11 +76,11 @@ def escaneo_qr_module():
         f"**¡{name}, bienvenido a SUVECOEX 2025, donde el comercio exterior conecta, crece y se transforma!**"
     )
 
-    # Contador de escaneos
-    counter_key = "count_dia_1" if dia == "Día 1" else "count_dia_2"
+    # 8) Contador en sesión
+    counter_key = "count_dia_1" if dia == "Día 1" else "count_dia_2"
     st.session_state[counter_key] = st.session_state.get(counter_key, 0) + 1
     st.info(f"👤 Has escaneado {st.session_state[counter_key]} vez(ces) en {dia} hoy.")
 
-    # Bloqueo hasta reinicio
-    st.session_state["scan_done"] = True
+    # 9) Bloquear hasta reset
+    st.session_state["scan_done"]  = True
     st.session_state["last_qr_id"] = qr_id
