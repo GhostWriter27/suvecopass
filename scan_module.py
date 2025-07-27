@@ -2,6 +2,7 @@ import streamlit as st
 from firebase_ops import db
 import re
 from streamlit_qrcode_scanner import qrcode_scanner
+import streamlit.components.v1 as components
 
 def escaneo_qr_module():
     """
@@ -26,6 +27,18 @@ def escaneo_qr_module():
         return
 
     st.markdown("📲 **Apunta la cámara al código QR** y espera unos segundos.")
+
+    # 🔐 Forzar permiso de cámara
+    components.html("""
+    <script>
+    navigator.mediaDevices.getUserMedia({ video: true }).then(() => {
+      console.log("✅ Permiso de cámara concedido");
+    }).catch(err => {
+      alert("❌ No se pudo acceder a la cámara. Activa permisos en tu navegador.");
+      console.error("Error:", err);
+    });
+    </script>
+    """, height=0)
 
     qr_data = None
     try:
@@ -80,5 +93,5 @@ def escaneo_qr_module():
     st.info(f"👤 Has escaneado {st.session_state[counter_key]} vez(ces) en {dia} hoy.")
 
     # Bloqueo hasta reinicio
-    st.session_state["scan_done"]  = True
+    st.session_state["scan_done"] = True
     st.session_state["last_qr_id"] = qr_id
