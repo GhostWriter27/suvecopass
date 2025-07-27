@@ -3,7 +3,6 @@ import streamlit as st
 import time
 import base64
 import requests
-import json
 from config import firebase_config
 from streamlit_lottie import st_lottie
 
@@ -12,7 +11,7 @@ from scan_module import escaneo_qr_module
 from firebase_ops import db, bucket
 
 # ==== Configuración general ====
-st.set_page_config(page_title="SuvecoPass", layout="centered")
+st.set_page_config(page_title="SuvecoPass", layout="wide")
 
 # ==== Forzar siempre visible el icono de sidebar ====
 st.markdown("""
@@ -32,21 +31,16 @@ css_styles = '''
 
   .id-card, .info-card {
     width: 100%;
-    max-width: 100%;
+    max-width: 600px;
     height: auto;
     border: 2px solid #ccc;
     border-radius: 12px;
     background: #f9f9f9;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    margin: 20px auto;
     display: flex;
     flex-direction: column;
-  }
-
-  .id-photo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    text-align: center;
     padding: 1rem;
   }
 
@@ -55,22 +49,19 @@ css_styles = '''
     height: 180px;
     object-fit: cover;
     border: 2px solid #ccc;
-  }
-
-  .id-info {
-    padding: 1rem;
+    margin: 0 auto;
+    display: block;
   }
 
   .id-header {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-weight: bold;
     color: #000;
     margin-bottom: 8px;
-    text-align: center;
   }
 
   .id-line {
-    font-size: 0.95rem;
+    font-size: 1rem;
     margin-bottom: 4px;
   }
 
@@ -87,8 +78,6 @@ css_styles = '''
     font-size: 1.1rem;
     font-weight: bold;
     color: #000;
-    text-align: center;
-    padding: 1.5rem;
   }
 
   .footer {
@@ -189,23 +178,20 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "🏠 Inicio", "📤 Generar QR", "📥 Escanear QR", "🔍 Búsqueda manual"
 ])
 
-# ==== Tab 1 ====
+# ==== Tab 1: Inicio ====
 with tab1:
     if lottie_confetti:
         st_lottie(lottie_confetti, height=80, key="confetti")
-    st.image(avatar_url or "https://via.placeholder.com/140x180?text=Foto", width=140)
     st.markdown(f"""
-    <div class="id-card">
-      <div class="id-info">
-        <div class="id-header">SUVECOEX 2025</div>
-        <div class="id-line"><span class="id-label">Nombre:</span> {name}</div>
-        <div class="id-line"><span class="id-label">Correo:</span> {st.session_state["user_email"]}</div>
-        <div class="id-line"><span class="id-label">Rol:</span> Staff autorizado</div>
-      </div>
+    <div class="id-photo">
+      <img src="{avatar_url or 'https://via.placeholder.com/140x180?text=Foto'}" alt="Foto">
     </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
+    <div class="id-card">
+      <div class="id-header">SUVECOEX 2025</div>
+      <div class="id-line"><span class="id-label">Nombre:</span> {name}</div>
+      <div class="id-line"><span class="id-label">Correo:</span> {st.session_state['user_email']}</div>
+      <div class="id-line"><span class="id-label">Rol:</span> Staff autorizado</div>
+    </div>
     <div class="info-card">
       <div class="info-text">App de uso exclusivo para personal autorizado</div>
     </div>
@@ -217,15 +203,28 @@ with tab2:
 
 # ==== Tab 3: Escanear QR ====
 with tab3:
+    # 🎯 CSS para mostrar correctamente la cámara en móviles
+    st.markdown("""
+    <style>
+    video {
+      width: 100% !important;
+      max-width: 420px;
+      height: auto !important;
+      margin: auto;
+      display: block;
+      z-index: 10;
+    }
+    canvas {
+      display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     escaneo_qr_module()
 
 # ==== Tab 4: Búsqueda manual ====
 with tab4:
-    st.subheader("🔍 Búsqueda manual")
-    criterio = st.selectbox("Buscar por", ["Correo", "Nombre", "Cédula"])
-    valor = st.text_input(f"Ingrese {criterio.lower()}")
-    if st.button("🔍 Buscar"):
-        st.info(f"Buscando {valor} por {criterio}")
+    st.info("🔧 Módulo de búsqueda manual en desarrollo.")
 
 # ==== Footer ====
 st.markdown('<div class="footer">Hecho con ❤️ por el SUVECOEX Team</div>', unsafe_allow_html=True)
