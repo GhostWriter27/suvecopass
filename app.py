@@ -18,10 +18,8 @@ st.markdown("""
 <style>
   :root { --gutter: 1rem; --max-w: 90vw; }
 
-  /* Contenedor central */
   .container { width: var(--max-w); max-width: 1200px; margin: 0 auto; }
 
-  /* Card genérica */
   .card {
     background: #ffffff;
     border-radius: .75rem;
@@ -30,7 +28,6 @@ st.markdown("""
     margin: var(--gutter) auto;
   }
 
-  /* ID Card */
   .id-card {
     display: flex; overflow: hidden;
     max-width: 700px; height: 220px;
@@ -51,20 +48,17 @@ st.markdown("""
   .id-line { font-size: 0.95rem; margin-bottom: 4px; }
   .id-label { font-weight: bold; width: 80px; display: inline-block; }
 
-  /* Info Card */
   .info-card {
     display: flex; align-items: center; justify-content: center;
     max-width: 350px; height: 220px;
   }
   .info-text { font-size: 1.3rem; font-weight: bold; text-align: center; }
 
-  /* INPUTs y TEXTAREA */
   input, textarea {
     background-color: #ffffff !important;
     color: #000000 !important;
   }
 
-  /* STREAMLIT SELECTBOX & DATEINPUT */
   div[data-baseweb="select"] > div:first-child,
   div[data-testid="stSelectbox"] div[role="combobox"] > div,
   div[data-testid="stSelectbox"] div[role="combobox"],
@@ -74,14 +68,12 @@ st.markdown("""
     color: #000000 !important;
   }
 
-  /* También las listas desplegables */
   div[data-baseweb="select"] ul,
   div[role="listbox"] > div {
     background-color: #ffffff !important;
     color: #000000 !important;
   }
 
-  /* Botones genéricos */
   .btn {
     display: inline-block; width: 100%; padding: .75rem; font-size: 1rem;
     border: none; border-radius: .5rem; text-align: center; cursor: pointer;
@@ -89,30 +81,17 @@ st.markdown("""
   .btn-primary { background-color: #007bff; color: white; }
   .btn-secondary { background-color: #6c757d; color: white; }
 
-  /* Sidebar siempre visible */
   button[title="Open sidebar"] { visibility: visible !important; }
 
-  /* Tweaks Streamlit */
   body { font-family: 'Inter', sans-serif; }
   #MainMenu { visibility: hidden; }
   .block-container { padding: 2rem; background: #f0f2f6; }
 
-  /* Footer */
   .footer {
     text-align: center; color: #888; font-size: 0.85rem; margin-top: 2rem;
   }
 </style>
 """, unsafe_allow_html=True)
-
-# ==== Inicializar Firebase Admin ====
-if not firebase_admin._apps:
-    key_path = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
-    cred = credentials.Certificate(key_path)
-    firebase_admin.initialize_app(cred, {
-        "storageBucket": firebase_config["storageBucket"]
-    })
-db = firestore.client()
-bucket = storage.bucket()
 
 # ==== Splash (solo la primera vez) ====
 if "splash_shown" not in st.session_state:
@@ -148,6 +127,8 @@ if "user_email" not in st.session_state:
             st.sidebar.error(f"📛 {r.json().get('error',{}).get('message','ERROR')}")
     st.stop()
 else:
+    from firebase_ops import db, bucket
+
     user_doc = db.collection("users").document(st.session_state["user_email"]).get()
     if not user_doc.exists:
         st.sidebar.header("📝 Completa tu perfil")
@@ -180,12 +161,12 @@ else:
             st.session_state.pop(k, None)
         st.experimental_rerun()
 
-# ==== Carga Lottie confetti ====
+# ==== Lottie ====
 def load_lottie_url(url):
     r = requests.get(url)
     return r.json() if r.ok else None
-lottie_confetti = load_lottie_url(
-    "https://assets9.lottiefiles.com/packages/lf20_touohxv0.json")
+
+lottie_confetti = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_touohxv0.json")
 
 # ==== Contenedor principal ====
 st.markdown("<div class='container'>", unsafe_allow_html=True)
