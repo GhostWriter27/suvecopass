@@ -1,20 +1,17 @@
-import json
-import streamlit as st
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
 # ==== Inicializar Firebase Admin con credenciales seguras ====
 if not firebase_admin._apps:
-    # Carga el JSON de la cuenta de servicio desde los secrets de Streamlit
-    sa_json = st.secrets["service_account"]["key_json"]
-    sa_info = json.loads(sa_json)
+    # Toma directamente todos los campos de la sección [service_account] de tu secrets.toml
+    sa_info = st.secrets["service_account"]
     cred = credentials.Certificate(sa_info)
     firebase_admin.initialize_app(cred, {
         "storageBucket": st.secrets["firebase"]["storageBucket"]
     })
 
-# Instanciar Firestore y Storage globales
+# Instancias globales de Firestore y Storage
 db = firestore.client()
 bucket = storage.bucket()
 
