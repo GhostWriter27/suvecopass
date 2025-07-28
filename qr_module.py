@@ -19,14 +19,22 @@ ID_CHARS = ''.join(c for c in (string.ascii_uppercase + string.digits) if c not 
 
 
 def enviar_por_email_silencioso(payload: dict) -> bool:
+    """Envía datos al webhook de HighLevel."""
     try:
         r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
         return r.ok
-    except:
+    except Exception:
         return False
 
 
 def generar_codigo_qr_module():
+    """
+    Módulo de Streamlit para generar un código QR:
+      - Captura datos del participante
+      - Genera ID único SUVECO2025-XXXXXXXXXX
+      - Crea y sube QR a Cloud Storage
+      - Guarda el registro en Firestore con el ID de QR como document ID
+    """
     st.header("📤 Generación de Código QR")
 
     with st.container():
@@ -65,15 +73,15 @@ def generar_codigo_qr_module():
         elif check_email_exists(email):
             st.error("❗ Ya existe un registro con ese correo.")
         else:
-            # Generar ID único
+            # Generar ID único sin caracteres ambiguos
             suffix = ''.join(random.choices(ID_CHARS, k=10))
             qr_id  = f"SUVECO2025-{suffix}"
 
-            # Crear QR
+            # Crear QR apuntando a la ruta de escaneo
             qr_data = f"https://suvecopass.app/scan/{qr_id}"
             qr_img  = qrcode.make(qr_data)
 
-            # Subir a Storage
+            # Subir imagen QR a Firebase Storage
             buffer = io.BytesIO()
             qr_img.save(buffer, format="PNG")
             buffer.seek(0)
@@ -82,8 +90,9 @@ def generar_codigo_qr_module():
             blob.make_public()
             qr_url = blob.public_url
 
-            # Guardar en Firestore con el email como ID
+            # Preparar registro para Firestore
             record = {
+                "id_qr": qr_id,
                 "name": name,
                 "email": email,
                 "phone": phone,
@@ -91,13 +100,15 @@ def generar_codigo_qr_module():
                 "cargo": cargo,
                 "nicho": nicho,
                 "tipo_participacion": tipo_participacion,
-                "id_qr": qr_id,
                 "codigo_entrada": qr_url,
                 "escaneado_dia_1": "NO",
                 "escaneado_dia_2": "NO"
             }
-            save_qr_record(email, record)
 
+            # Guardar en Firestore usando qr_id como document ID (corregido)
+            save_qr_record(qr_id, record)
+
+            # Preparar payload para envío por email
             st.session_state["last_payload"] = {
                 "name": name,
                 "email": email,
@@ -112,6 +123,7 @@ def generar_codigo_qr_module():
             st.success("✅ QR generado correctamente.")
             st.image(qr_url, caption=f"QR: {qr_id}", use_column_width=True)
 
+    # Botón para envío por email mediante webhook
     if "last_payload" in st.session_state:
         if st.button("✉️ Enviar por email"):
             ok = enviar_por_email_silencioso(st.session_state["last_payload"])
@@ -120,12 +132,14 @@ def generar_codigo_qr_module():
             else:
                 st.error("❌ Falló el envío. Intenta de nuevo.")
 
+    # Sección de descarga de registros históricos
     with st.container():
         st.markdown("---")
         if st.button("📥 Descargar registros históricos"):
             docs = get_all_qr_records()
             df   = pd.DataFrame(docs)
 
+            # Reordenar columnas para Excel
             columnas = [
                 "id_qr", "name", "email", "phone", "empresa", "cargo",
                 "nicho", "tipo_participacion", "codigo_entrada",
@@ -142,3 +156,4 @@ def generar_codigo_qr_module():
                 "registros_qrs.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+            
