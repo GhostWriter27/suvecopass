@@ -72,7 +72,7 @@ def escaneo_qr_module():
     participacion = record.get("tipo_participacion", "")
 
     st.success(f"✅ ¡{name} ha sido registrado exitosamente!")
-    st.write(f"**Empresa:** {empresa}   |   **Participación:** {tipo_participacion}")
+    st.write(f"**Empresa:** {empresa}   |   **Participación:** {participacion}")
     st.markdown(
         f"**¡{name}, bienvenido a SUVECOEX 2025, donde el comercio exterior conecta, crece y se transforma!**"
     )
