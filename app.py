@@ -13,11 +13,19 @@ from manual_search_module import busqueda_manual_module
 # ==== Configuración general ====
 st.set_page_config(page_title="SuvecoPass", layout="centered")
 
-# ==== Forzar texto negro (si el tema es oscuro) ====
+# ==== Forzar tema claro y texto legible ==== 
 st.markdown(
     """
     <style>
-      /* fuerza texto negro en todo el contenido principal */
+      /* Sidebar: fondo claro y texto negro */
+      div[data-testid="stSidebar"] {
+        background-color: #ffffff !important;
+      }
+      div[data-testid="stSidebar"],
+      div[data-testid="stSidebar"] * {
+        color: #000000 !important;
+      }
+      /* Contenido principal: texto negro */
       .block-container,
       .container,
       .card,
