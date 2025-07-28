@@ -23,16 +23,20 @@ if not firebase_admin._apps:
         st.error(f"🔥 Error al inicializar Firebase: {e}")
         raise
 
+# ==== Clientes Firestore y Storage ====
 db = firestore.client()
 bucket = storage.bucket()
 
+# ==== Función para verificar si un email ya fue registrado ====
 def check_email_exists(email: str) -> bool:
     doc = db.collection("users").document(email).get()
     return doc.exists
 
-def save_qr_record(data: dict) -> None:
-    db.collection("qr_records").add(data)
+# ==== Guardar QR en la colección 'qrs' usando email como ID único ====
+def save_qr_record(email: str, data: dict) -> None:
+    db.collection("qrs").document(email).set(data)
 
+# ==== Obtener todos los registros QR de la colección 'qrs' ====
 def get_all_qr_records():
-    docs = db.collection("qr_records").stream()
+    docs = db.collection("qrs").stream()
     return [doc.to_dict() for doc in docs]

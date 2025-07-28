@@ -19,10 +19,6 @@ ID_CHARS = ''.join(c for c in (string.ascii_uppercase + string.digits) if c not 
 
 
 def enviar_por_email_silencioso(payload: dict) -> bool:
-    """
-    Dispara el webhook POST sin mostrar nada al usuario.
-    Devuelve True si fue 200-299, False en otro caso.
-    """
     try:
         r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
         return r.ok
@@ -86,7 +82,7 @@ def generar_codigo_qr_module():
             blob.make_public()
             qr_url = blob.public_url
 
-            # Guardar en Firestore
+            # Guardar en Firestore con el email como ID
             record = {
                 "name": name,
                 "email": email,
@@ -100,9 +96,8 @@ def generar_codigo_qr_module():
                 "escaneado_dia_1": "NO",
                 "escaneado_dia_2": "NO"
             }
-            save_qr_record(record)  # ✅ Corregido: solo se pasa 1 argumento
+            save_qr_record(email, record)
 
-            # Guardamos en session para el envío posterior
             st.session_state["last_payload"] = {
                 "name": name,
                 "email": email,
@@ -117,7 +112,6 @@ def generar_codigo_qr_module():
             st.success("✅ QR generado correctamente.")
             st.image(qr_url, caption=f"QR: {qr_id}", use_column_width=True)
 
-    # Botón "Enviar por email"
     if "last_payload" in st.session_state:
         if st.button("✉️ Enviar por email"):
             ok = enviar_por_email_silencioso(st.session_state["last_payload"])
@@ -126,7 +120,6 @@ def generar_codigo_qr_module():
             else:
                 st.error("❌ Falló el envío. Intenta de nuevo.")
 
-    # Botón para exportar histórico
     with st.container():
         st.markdown("---")
         if st.button("📥 Descargar registros históricos"):
