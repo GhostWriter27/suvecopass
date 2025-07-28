@@ -69,6 +69,7 @@ def escaneo_qr_module():
     name    = record.get("name", "Usuario")
     empresa = record.get("empresa", "")
     phone   = record.get("phone", "")
+    participacion = record.get("tipo_participacion", "")
 
     st.success(f"✅ ¡{name} ha sido registrado exitosamente!")
     st.write(f"**Empresa:** {empresa}   |   **Teléfono:** {phone}")
